@@ -16,7 +16,7 @@ import java.util.ArrayList;
 
 public class ParseHandler extends DefaultHandler {
 
-    private ArrayList<TideItem> tideItems; // Will hold the parser output
+    private TideItems tideItems; // Will hold the parser output
     private TideItem item;           // Holds data for one tide prediction
     private boolean isData = false;  // This and the other booleans are used by SAX
     private boolean isDay = false;
@@ -25,13 +25,13 @@ public class ParseHandler extends DefaultHandler {
     private boolean isPredInCm = false;
     private boolean isHighLow = false;
 
-    public ArrayList<TideItem> getItems() {
+    public TideItems getItems() {
         return tideItems;
     }
 
     @Override
     public void startDocument() throws SAXException {
-        tideItems = new ArrayList<TideItem>();
+        tideItems = new TideItems();
     }
 
     @Override

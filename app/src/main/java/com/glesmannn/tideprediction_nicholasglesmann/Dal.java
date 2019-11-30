@@ -1,13 +1,23 @@
 package com.glesmannn.tideprediction_nicholasglesmann;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
+import android.widget.Toast;
+
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.List;
+
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+
+import static com.glesmannn.tideprediction_nicholasglesmann.TideSQLiteHelper.*;
+
 
 
 /*************** Dal class: Data Access Layer ***************/
@@ -36,7 +46,7 @@ public class Dal {
 
     // This method accepts the name of a file in the assets folder as an argument
     // and returns an ArrayList of TideItem objects.
-    public ArrayList<TideItem> parseXmlFile(String fileName) {
+    public TideItems parseXmlFile(String fileName) {
         try {
             // get the XML reader
             SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -51,12 +61,71 @@ public class Dal {
             InputSource is = new InputSource(in);
             xmlreader.parse(is);
             // set the feed in the activity
-            ArrayList<TideItem> items = handler.getItems();
+            TideItems items = handler.getItems();
             return items;
         }
         catch (Exception e) {
             Log.e("Tide Predictions", e.toString());
             return null;
+        }
+    }
+
+    public Cursor getTideDataByLocation(String locationSelection, String date) {
+
+        loadTestData(locationSelection);
+
+        // Init DB
+        TideSQLiteHelper helper = new TideSQLiteHelper(context);
+        SQLiteDatabase db = helper.getReadableDatabase();
+
+        String query = "SELECT * FROM Tide WHERE City = ? AND Date = ?";
+        String[] variables = new String[]{locationSelection, date};
+
+        return db.rawQuery(query, variables);
+    }
+
+    public void loadTestData(String locationSelection) {
+
+        // Initialize DB
+        TideSQLiteHelper helper = new TideSQLiteHelper(context);
+        SQLiteDatabase db = helper.getWritableDatabase();
+
+        String[] variables = new String[]{locationSelection};
+
+        // load test data
+        if (db.rawQuery("SELECT * FROM Tide WHERE City = ?", variables).getCount() == 0) {
+            loadDbFromXML("florence");
+            loadDbFromXML("newport");
+            loadDbFromXML("reedsport");
+        }
+    }
+
+    private void loadDbFromXML(String locationSelection) {
+        int x = 2018;
+        while( x != 2021) {
+            // Read XML
+            String fileName = locationSelection + "-or-tide-data-" + x + ".xml";
+            TideItems items = parseXmlFile(fileName);
+            items.setCity(locationSelection);
+
+            // Init DB
+            TideSQLiteHelper helper = new TideSQLiteHelper(context);
+            SQLiteDatabase db = helper.getWritableDatabase();
+
+            ContentValues cv = new ContentValues();
+
+            for(TideItem item : items) {
+                cv.put(CITY, items.getCity());
+                cv.put(DATE, item.getDate());
+                cv.put(DAY, item.getDay());
+                cv.put(TIME, item.getTime());
+                cv.put(PRED_IN_FT, item.getPredInFt());
+                cv.put(PRED_IN_CM, item.getPredInCm());
+                cv.put(HIGHLOW, item.getHighlow());
+                db.insert(TIDE, null, cv);
+            }
+            db.close();
+            x++;
         }
     }
 }

@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Tide Prediction - Nicholas Glesmann</string>
+    <string-array name="locations_array">
+        <item>Florence</item>
+        <item>Newport</item>
+        <item>Reedsport</item>
+    </string-array>
 </resources>

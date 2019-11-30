@@ -1,63 +1,105 @@
 package com.glesmannn.tideprediction_nicholasglesmann;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.annotation.TargetApi;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
+import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.Spinner;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
+import static com.glesmannn.tideprediction_nicholasglesmann.TideSQLiteHelper.CITY;
 
-    private ArrayList<TideItem> tideItems;
-    static final String DATE = "date";
-    static final String DAY = "day";
-    static final String TIDE = "tide";
-    static final String TIME = "time";
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, DatePicker.OnDateChangedListener {
+
+    private int day = 0;
+    private int month = 0;
+    private int year = 0;
+    private String locationSelection = "florence";
+
+    public static final String DATE_PICKER_DAY = "day";
+    public static final String DATE_PICKER_MONTH = "month";
+    public static final String DATE_PICKER_YEAR = "year";
+    public static final String LOCATION_SELECTION = "location_selection";
+
+    private DatePicker datePicker;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Dal dal = new Dal(getApplicationContext());
-        tideItems = dal.parseXmlFile("newport-or-tide-data.xml");
+        // Location spinner
+        Spinner locationSpinner = (Spinner) findViewById(R.id.locationSpinner);
+        locationSpinner.setOnItemSelectedListener(this);
 
-        ArrayList<HashMap<String, String>> data = new ArrayList<>();
+        // Date Picker
+        datePicker = findViewById(R.id.datePicker);
+        day = datePicker.getDayOfMonth();
+        month = datePicker.getMonth();
+        year = datePicker.getYear();
 
-        for (TideItem item : tideItems) {
-            HashMap<String, String> map = new HashMap<>();
-            map.put(DATE, item.getDate());
-            map.put(DAY, item.getDay());
-            map.put(TIDE, item.getHighlow());
-            map.put(TIME, item.getTime());
+        // Button
+        Button getTideDataButton = findViewById(R.id.getTideByIdButton);
+        getTideDataButton.setOnClickListener(this);
 
-            data.add(map);
-        }
-
-        SimpleAdapter adapter = new SimpleAdapter(
-                this,
-                data,
-                R.layout.listview_items,
-                new String[]{DATE, DAY, TIDE, TIME},
-                new int[]{R.id.dateTextView, R.id.dayTextView, R.id.tideTextView, R.id.timeTextView}
-                );
-
-        ListView itemsListView = findViewById(R.id.tideListView);
-        itemsListView.setAdapter(adapter);
-        itemsListView.setOnItemClickListener(this);
-        itemsListView.setFastScrollEnabled(true);
     }
 
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        switch (position){
+            case 0:
+                locationSelection = "florence";
+                break;
+            case 1:
+                locationSelection = "newport";
+                break;
+            case 2:
+                locationSelection = "reedsport";
+        }
+    }
 
-        TideItem item = tideItems.get(position);
-        Toast.makeText(this, "Height: " + item.getPredInCm() + "cm", Toast.LENGTH_SHORT).show();
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+
+    }
+
+    @Override
+    public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+        // doesn't work with API 19 and I don't want to deal with changing it
+    }
+
+    @Override
+    public void onClick(View v) {
+        if(v.getId() == R.id.getTideByIdButton) {
+            String newDay;
+            String newMonth;
+
+            day = datePicker.getDayOfMonth();
+            if(day < 10) {
+                newDay = "0" + day;
+            } else {
+                newDay = Integer.toString(day);
+            }
+            month = datePicker.getMonth() + 1;
+            if(month < 10) {
+                newMonth = "0" + month;
+            } else {
+                newMonth = Integer.toString(month);
+            }
+            year = datePicker.getYear();
+
+            Intent intent = new Intent(this, SecondActivity.class);
+            intent.putExtra(DATE_PICKER_DAY, newDay);
+            intent.putExtra(DATE_PICKER_MONTH, newMonth);
+            intent.putExtra(DATE_PICKER_YEAR, year);
+            intent.putExtra(LOCATION_SELECTION, locationSelection);
+            Toast.makeText(this, "Loading data...", Toast.LENGTH_SHORT).show();
+            startActivity(intent);
+        }
     }
 }
